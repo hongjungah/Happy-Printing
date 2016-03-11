@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+    <title></title>
+    <style type="text/css">
+        .preView { width: 99%; height : 400px; border:1px solid silver; }
+        .writePage { height : 400px; text-align:center; border:1px solid silver; display:table-cell;}
+        .finalImage { height : 400px; border:1px solid silver;}
+    </style>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.js"></script>
+  	<script type="text/javascript" src="html2canvas.js"></script>	
+	</head>
+	<body>
+		
+	    <div>
+	    	이미지선택:
+	    	<input id="fileData" name="fileData" type="file" onchange="fileUploadPreview(this, document.getElementById('preView'))" />
+	    	<button type="button" id="captureBtn" onclick="capture('preView', 'writePage')">Next</button>
+	    </div>
+	    <div id="preView" class="preView" title="이미지미리보기"></div>
+	    
+	    <br>
+	    
+	    <div>
+				Text위치 :
+				<input type="radio" id="textAlign" name="textAlign" value="top" checked="checked">상
+				<input type="radio" id="textAlign" name="textAlign" value="mid">중
+				<input type="radio" id="textAlign" name="textAlign" value="btm">하
+				
+				<input type="text" id="inputText" name="inputText" size="20" placeholder="입력해주세요." style="height:23px;" />
+			  <button type="button" id="insertWord" onclick="insertWord('inputText', 'textAlign')">글자추가</button>
+			  <button type="button" id="captureBtn2" onclick="capture('writePage', 'finalImage')">Next</button>
+			</div>
+	    
+	    <div id="writePage" name="writePage" class="writePage"> </div>
+	    
+	    <br>
+	    
+	    최종확인:
+	    <div id="finalImage" name="finalImage" class="finalImage"> </div>
+	</body>
+
+    <script type="text/javascript">
+				
+				window.onload = function() {
+					var imageWidth = document.getElementById("preView").offsetWidth;
+					document.getElementById("writePage").style.width = imageWidth - 2 + 'px';
+					document.getElementById("finalImage").style.width = imageWidth - 2 + 'px';
+				}
+				
+        function fileUploadPreview(targetObj, View_area) {
+            if(!/(\.gif|\.jpg|\.jpeg|\.png)$/i.test(targetObj.value)) {
+                alert("이미지 형식의 파일을 선택하십시오");
+                return;
+            }   
+            var ua = window.navigator.userAgent;//ie일때(IE8 이하에서만 작동)     
+            if (ua.indexOf("MSIE") > -1) {         
+            	targetObj.select();
+            	try {             
+            		var src = document.selection.createRange().text; // get file full path(IE9, IE10에서 사용 불가)             
+            		var ie_preview_error = document.getElementById("ie_preview_error_" + View_area);               
+            		if (ie_preview_error) {                 
+            			View_area.removeChild(ie_preview_error); //error가 있으면 delete             
+            		}          
+            		//이미지 로딩, sizingMethod는 div에 맞춰서 사이즈를 자동조절 하는 역할             
+            		View_area.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+ src + "', sizingMethod='scale')";         
+            	} catch (e) {             
+            		if (!document.getElementById("ie_preview_error_" + View_area)) {                 
+            			var info = document.createElement("<P>");                 
+            			info.id = "ie_preview_error_" + View_area;                 
+            			info.innerHTML = e.name;                 
+            			View_area.insertBefore(info, null);             
+            		}         
+            	}         
+            	//ie가 아닐때(크롬, 사파리, FF)     
+            } else {         
+            	var files = targetObj.files;         
+            	for (var i = 0; i < files.length; i++) {             
+            		var file = files[i];             
+            		var imageType = /image.*/; //이미지 파일일경우만.. 뿌려준다.             
+            		if (!file.type.match(imageType))                 
+            			continue;             
+            		var prevImg = document.getElementById("prev_" + View_area); //이전에 미리보기가 있다면 삭제             
+            		if (prevImg) {                 
+            			View_area.removeChild(prevImg);             
+            		}
+            		var W = View_area.offsetWidth - 2;
+                var H = View_area.offsetHeight - 2;
+            		var img = document.createElement("img");             
+            		img.id = "prev_" + View_area;             
+            		img.classList.add("obj");             
+            		img.file = file;             
+            		img.width = W;             
+            		img.height = H;          
+            		View_area.appendChild(img);             
+            		if (window.FileReader) { // FireFox, Chrome, Opera 확인.                 
+            			var reader = new FileReader();                 
+            			reader.onloadend = (function(aImg) {                     
+            			return function(e) {                         
+            				aImg.src = e.target.result;                     
+            				};                 
+            			})(img);                 
+            			reader.readAsDataURL(file);             
+            		} else { 
+            			// safari is not supported FileReader                 
+            			//alert('not supported FileReader');                 
+            			if (!document.getElementById("sfr_preview_error_"+ View_area)) {                     
+            				var info = document.createElement("p");                     
+            				info.id = "sfr_preview_error_" + View_area;                     
+            				info.innerHTML = "not supported FileReader";                     
+            				View_area.insertBefore(info, null);                 
+            			}             
+            		}         
+            	}     
+            } 
+        } 
+
+		function insertWord(inputText, textAlign) {
+			var inputText = document.getElementById(inputText).value;
+			var writePage = document.getElementById('writePage');
+			var preView = document.getElementById("preView");
+			writePage.innerHTML = inputText;
+			
+			var textAlign = document.getElementsByName(textAlign);
+			var selectVal;
+			for(var i = 0; i < textAlign.length ; i++){
+				if(textAlign[i].checked == true){
+					selectVal = textAlign[i].value;
+				}
+			}
+			
+			var H = preView.offsetHeight;
+			if(selectVal == 'top') {
+				writePage.style.verticalAlign = 'top';
+			} else if (selectVal == 'mid') {
+				writePage.style.verticalAlign = 'middle';
+			} else if (selectVal == 'btm'){
+				writePage.style.verticalAlign = 'bottom';
+			}
+		}
+		
+		function capture(fromId, toId) {
+			html2canvas(document.getElementById(fromId), {
+				onrendered: function(canvas) { 
+					var ctImg = canvas.toDataURL("image/png");
+					console.log(ctImg);
+					document.getElementById(toId).style.backgroundImage = "url('" + ctImg+ "')";
+					//$("#target2").html('<img src=' + ctImg + '>'); // capture 내용이 보여짐
+					//window.open(img); // 이미지를 윈도우 팝업으로..
+				}
+			}); 
+		}
+		
+    </script>
+</html>
